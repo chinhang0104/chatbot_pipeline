@@ -1,0 +1,1 @@
+RESTORE TABLE main.chat_history.gold_user_team_metrics TO VERSION AS OF 5;

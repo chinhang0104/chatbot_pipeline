@@ -1,0 +1,1 @@
+DESCRIBE HISTORY main.chat_history.silver_checkpoints;
