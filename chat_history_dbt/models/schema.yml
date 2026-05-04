@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: team_metrics
+    description: "Team checkpoint metrics mart"
+    columns:
+      - name: team
+        tests:
+          - not_null
+          - unique
+      - name: team_checkpoint_count
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "team_checkpoint_count >= 0"
