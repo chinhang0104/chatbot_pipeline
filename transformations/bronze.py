@@ -1,4 +1,4 @@
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType
 
@@ -12,7 +12,7 @@ metadata_schema = StructType([
     StructField("version", StringType(), True),
 ])
 
-@dlt.table(
+@dp.table(
     comment="Bronze: Auto Loader checkpoints (incremental), raw + parsed JSON",
     table_properties={
         "quality": "bronze",
@@ -26,28 +26,23 @@ def bronze_checkpoints():
         .option("header", "true")
         .option("quote", '"')
         .option("escape", '"')
-        .option("cloudFiles.schemaLocation", "/Volumes/main/chat_history/_checkpoints_schema")  # Schema evolution
+        .option("cloudFiles.schemaHints", "thread_id string, checkpoint_ns string, checkpoint_id string, parent_checkpoint_id string, type string, checkpoint string, metadata string")
         .option("cloudFiles.schemaEvolutionMode", "rescue")  # Handle new columns
         .option("rescuedDataColumn", "_rescued_data")  # Keep bad rows
         .load("/Volumes/main/chat_history/raw_data/checkpoints_*.csv")
         .withColumn("ingested_at", F.current_timestamp())
     )
-
     
-# Dont use auto loader for mutable table
-# @dlt.table(
-#     comment="Bronze: Auto Loader thread lookup (incremental)",
-#     table_properties={
-#         "quality": "bronze",
-#         "delta.autoOptimize.optimizeWrite": "true"
-#     }
-# )
-# def bronze_thread_lookup():
-#     return (
-#         spark.readStream.format("cloudFiles")
-#         .option("cloudFiles.format", "csv")
-#         .option("header", "true")
-#         .option("cloudFiles.schemaLocation", "/Volumes/main/chat_history/_lookup_schema")
-#         .load("/Volumes/main/chat_history/raw_data/thread_lookup_*.csv")
-#         .withColumn("ingested_at", F.current_timestamp())
-#     )
+@dp.table(
+    comment="Bronze: Thread lookup (Auto Loader incremental from CSV)",
+    table_properties={"quality": "bronze"}
+)
+def bronze_thread_lookup_stream():
+    return (
+        spark.readStream.format("cloudFiles")
+        .option("cloudFiles.format", "csv")
+        .option("header", "true")
+        .option("cloudFiles.schemaHints", "thread_id string, user_id string, team string")
+        .load("/Volumes/main/chat_history/raw_data/thread_teams_*.csv")
+        .withColumn("ingested_at", F.current_timestamp())
+    )
