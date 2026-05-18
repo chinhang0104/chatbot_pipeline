@@ -1,8 +1,0 @@
-version: 2
-
-sources:
-  - name: chat_history
-    schema: chat_history
-    tables:
-      - name: gold_user_team_metrics
-      - name: gold_team_summary
